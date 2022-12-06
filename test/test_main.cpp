@@ -8,8 +8,8 @@ int main(int argc, char** argv)
 	Lecsems lecsems("1+2*3");
 
 	Arithmetic—alculation other = lecsems;
-	other.getInfix();
-	other.printInfix();
+	other.getPostfix();
+	other.printPostfix();
 	std::cout << std::endl;
 	std::cout << other.calculating() << std::endl;
 

@@ -273,8 +273,8 @@ class Arithmetic—alculation : private Lecsems {
 private:
 	Lecsems m_expression;
 
-	std::vector<std::pair<std::string, priority>> m_infix;
-	std::string m_postfix;
+	std::vector<std::pair<std::string, priority>> m_postfix;
+	std::string m_prefix;
 
 public:
 
@@ -287,41 +287,41 @@ public:
 	std::string calculating() {
 		std::stack<std::pair<std::string, priority>> steck;
 
-		for (size_t count = 0; count < m_infix.size(); ++count) {
-			if (m_infix[count].second == priority::number || m_infix[count].second == priority::constants) {
-				steck.push(m_infix[count]);
+		for (size_t count = 0; count < m_postfix.size(); ++count) {
+			if (m_postfix[count].second == priority::number || m_postfix[count].second == priority::constants) {
+				steck.push(m_postfix[count]);
 			}
-			else if (m_infix[count].second == priority::letters) {
-				std::cout << "ENTER THE VALUE OF " << m_infix[count].first << ": ";
-				std::cin >> m_infix[count].first;
-				if (!m_expression.checkDoubleValue(m_infix[count].first))
+			else if (m_postfix[count].second == priority::letters) {
+				std::cout << "ENTER THE VALUE OF " << m_postfix[count].first << ": ";
+				std::cin >> m_postfix[count].first;
+				if (!m_expression.checkDoubleValue(m_postfix[count].first))
 					throw ("ERROR: wrong number");
-				m_infix[count].second = priority::number;
-				steck.push(m_infix[count]);
+				m_postfix[count].second = priority::number;
+				steck.push(m_postfix[count]);
 			}
 			else {
-				if (m_infix[count].first == "+") {
+				if (m_postfix[count].first == "+") {
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
 					double rightOperand = std::stod(steck.top().first);
 					steck.pop();
 					steck.push(std::make_pair(std::to_string(leftOperand + rightOperand), priority::operation_add_or_sub));
 				}
-				else if (m_infix[count].first == "-") {
+				else if (m_postfix[count].first == "-") {
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
 					double rightOperand = std::stod(steck.top().first);
 					steck.pop();
 					steck.push(std::make_pair(std::to_string(leftOperand - rightOperand), priority::operation_add_or_sub));
 				}
-				else if (m_infix[count].first == "*") {
+				else if (m_postfix[count].first == "*") {
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
 					double rightOperand = std::stod(steck.top().first);
 					steck.pop();
 					steck.push(std::make_pair(std::to_string(leftOperand * rightOperand), priority::operation_add_or_sub));
 				}
-				else if (m_infix[count].first == "/") {
+				else if (m_postfix[count].first == "/") {
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
 					double rightOperand = std::stod(steck.top().first);
@@ -333,27 +333,27 @@ public:
 		return steck.top().first;
 	}
 
-	std::vector<std::pair<std::string, priority>> getInfix() {
+	std::vector<std::pair<std::string, priority>> getPostfix() {
 		std::stack<std::pair<std::string, priority>> stack;
 
 		for (size_t count = 0; count < m_expression.m_data.size(); ++count) {
 			if (m_expression.m_data[count].second == priority::number)
-				m_infix.push_back(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
+				m_postfix.push_back(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 			else if (m_expression.m_data[count].second == priority::letters) {
 				//std::cout << "ENTER THE VALUE OF " << m_expression.m_data[count].first << ": ";
 				//std::cin >> m_expression.m_data[count].first;
 				//if (!m_expression.checkDoubleValue(m_expression.m_data[count].first))
 				//	throw ("ERROR: wrong number");
 				//m_expression.m_data[count].second = priority::number;
-				m_infix.push_back(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
+				m_postfix.push_back(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 			}
 			else if (m_expression.m_data[count].second == priority::constants)
-				m_infix.push_back(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
+				m_postfix.push_back(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 			else if (m_expression.m_data[count].first == "(")
 				stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 			else if (m_expression.m_data[count].first == ")") {
 				while (stack.top().first != "(") {
-					m_infix.push_back(std::make_pair(stack.top().first, stack.top().second));
+					m_postfix.push_back(std::make_pair(stack.top().first, stack.top().second));
 					stack.pop();
 				}
 				stack.pop();
@@ -362,7 +362,7 @@ public:
 				if (stack.empty())
 					stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 				else if (stack.top().first == "+" || stack.top().first == "-" || stack.top().first == "/" || stack.top().first == "*") {
-					m_infix.push_back(stack.top());
+					m_postfix.push_back(stack.top());
 					stack.pop();
 					stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 				}
@@ -372,7 +372,7 @@ public:
 				if (stack.empty())
 					stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 				else if (stack.top().first == "*" || stack.top().first == "/") {
-					m_infix.push_back(stack.top());
+					m_postfix.push_back(stack.top());
 					stack.pop();
 					stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 				}
@@ -384,14 +384,14 @@ public:
 			if (stack.top().first == "(" || stack.top().first == ")")
 				stack.pop();
 			else {
-				m_infix.push_back(stack.top());
+				m_postfix.push_back(stack.top());
 				stack.pop();
 			}
 		}
-		return m_infix;
+		return m_postfix;
 	}
 
-	std::string getPostfix() {
+	std::string getPrefix() {
 		std::stack<std::string> steck;
 
 		for (size_t count = 0; count < m_expression.m_data.size(); ++count) {
@@ -441,15 +441,15 @@ public:
 		}
 		std::stack<std::string> temp = steck;
 		for (size_t count = 0; count < steck.size(); ++count) {
-			m_postfix += temp.top();
+			m_prefix += temp.top();
 			temp.pop();
 		}
-		return m_postfix;
+		return m_prefix;
 	}
 
-	void printInfix() {
-		for (size_t count = 0; count < m_infix.size(); ++count) {
-			std::cout << m_infix[count].first;
+	void printPostfix() {
+		for (size_t count = 0; count < m_postfix.size(); ++count) {
+			std::cout << m_postfix[count].first;
 		}
 	}
 
