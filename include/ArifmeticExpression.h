@@ -34,7 +34,10 @@ public:
 		waiting_operator,
 		waiting_brackets,
 		waiting_operator_or_brackets,
-		wait_numb_or_brackets
+		wait_numb_or_brackets,
+		wait_operand_after_unarn_op,
+		wait_unarn_or_number,
+		waiting_closed_brackets
 	};
 
 	class constants {
@@ -181,13 +184,32 @@ public:
 			switch (st)
 			{
 			case Lecsems::state::start:
-				if (m_data[count].first == "." || m_data[count].first == ")" || m_data[count].second == priority::operation_add_or_sub || m_data[count].second == priority::operation_mult_or_div) st = state::error;
+				if (m_data[count].first == "." || m_data[count].first == ")" || m_data[count].second == priority::operation_mult_or_div || m_data[count].second == priority::operation_add_or_sub) st = state::error;
 				else if (m_data[count].second == priority::functions) st = state::waiting_brackets;
 				else if (m_data[count].first == "(") {
-					st = state::start;
+					st = state::wait_unarn_or_number;
 					++count_of_breckets;
 				}
 				else if (m_data[count].second == priority::letters || m_data[count].second == priority::number || m_data[count].second == priority::constants) st = state::waiting_operator_or_brackets;
+				break;
+			case Lecsems::state::wait_unarn_or_number:
+				if (m_data[count].second == priority::operation_add_or_sub) st = state::wait_operand_after_unarn_op;
+				else if (m_data[count].first == "." || m_data[count].first == ")" || m_data[count].second == priority::operation_mult_or_div || m_data[count].second == priority::operation_add_or_sub) st = state::error;
+				else if (m_data[count].second == priority::functions) st = state::waiting_brackets;
+				else if (m_data[count].second == priority::letters || m_data[count].second == priority::number || m_data[count].second == priority::constants) st = state::waiting_operator_or_brackets;
+				break;
+			case Lecsems::state::wait_operand_after_unarn_op:
+				if (m_data[count].second == priority::constants || m_data[count].second == priority::letters || m_data[count].second == priority::number) {
+					st = state::waiting_closed_brackets;
+				}
+				else st = state::error;
+				break;
+			case Lecsems::state::waiting_closed_brackets:
+				if (m_data[count].first == ")") {
+					--count_of_breckets;
+					st = state::waiting_operator;
+				}
+				else st = state::error;
 				break;
 			case Lecsems::state::waiting_operator:
 				if (m_data[count].second == priority::operation_add_or_sub || m_data[count].second == priority::operation_mult_or_div)
@@ -272,12 +294,8 @@ public:
 class Arithmetic—alculation : private Lecsems {
 private:
 	Lecsems m_expression;
-
 	std::vector<std::pair<std::string, priority>> m_postfix;
-	std::string m_prefix;
-
 public:
-
 	Arithmetic—alculation(const Lecsems& expression) {
 		m_expression = expression;
 		if (!m_expression.check())
@@ -298,6 +316,20 @@ public:
 					throw ("ERROR: wrong number");
 				m_postfix[count].second = priority::number;
 				steck.push(m_postfix[count]);
+			}
+			else if (m_postfix[count].second == priority::functions) {
+				steck.push(m_postfix[count]);
+				size_t count_of_breckets = 0;
+				for (size_t COUNT = count; COUNT < m_postfix.size(); ++COUNT) {
+					if (m_postfix[count].first == "(") {
+						++count_of_breckets;
+						steck.push(m_postfix[count]);
+					}
+					else if (m_postfix[count].first == ")") {
+						--count_of_breckets;
+
+					}
+				}
 			}
 			else {
 				if (m_postfix[count].first == "+") {
@@ -362,9 +394,15 @@ public:
 				if (stack.empty())
 					stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 				else if (stack.top().first == "+" || stack.top().first == "-" || stack.top().first == "/" || stack.top().first == "*") {
-					m_postfix.push_back(stack.top());
-					stack.pop();
-					stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
+					if ((m_expression.m_data[count].first == "-") && (m_expression.m_data[count + 1].second == priority::constants || m_expression.m_data[count + 1].second == priority::letters || m_expression.m_data[count + 1].second == priority::number)) {
+						m_postfix.push_back(std::make_pair(std::to_string((1) * std::stod(m_expression.m_data[count + 1].first)),m_expression.m_data[count+1].second));
+						++count;
+					}
+					else {
+						m_postfix.push_back(stack.top());
+						stack.pop();
+						stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
+					}
 				}
 				else stack.push(std::make_pair(m_expression.m_data[count].first, m_expression.m_data[count].second));
 			}
@@ -391,60 +429,11 @@ public:
 		return m_postfix;
 	}
 
-	std::string getPrefix() {
-		std::stack<std::string> steck;
-
-		for (size_t count = 0; count < m_expression.m_data.size(); ++count) {
-			if (m_expression.m_data[count].second == priority::number)
-				steck.push(m_expression.m_data[count].first);
-			else if (m_expression.m_data[count].second == priority::constants)
-				steck.push(m_expression.m_data[count].first);
-			else if (m_expression.m_data[count].second == priority::letters) {
-				std::cout << "ENTER THE VALUE OF: " << m_expression.m_data[count].first;
-				std::cin >> m_expression.m_data[count].first;
-				steck.push(m_expression.m_data[count].first);
-			}
-			else if (m_expression.m_data[count].second == priority::operation_add_or_sub) {
-				if (m_expression.m_data[count].first == "+") {
-					double temp1 = std::stod(steck.top());
-					steck.pop();
-					double temp2 = std::stod(steck.top());
-					steck.pop();
-					steck.push(std::to_string(temp1 + temp2));
-				}
-				else {
-					double temp1 = std::stod(steck.top());
-					steck.pop();
-					double temp2 = std::stod(steck.top());
-					steck.pop();
-					steck.push(std::to_string(temp1 - temp2));
-				}
-			}
-			else if (m_expression.m_data[count].second == priority::operation_mult_or_div) {
-				if (m_expression.m_data[count].first == "*") {
-					double temp1 = std::stod(steck.top());
-					steck.pop();
-					double temp2 = std::stod(steck.top());
-					steck.pop();
-					steck.push(std::to_string(temp1 * temp2));
-				}
-				else {
-					double temp1 = std::stod(steck.top());
-					steck.pop();
-					double temp2 = std::stod(steck.top());
-					steck.pop();
-					if (temp2 == 0)
-						throw ("ERROR: U can't to div on zero");
-					else steck.push(std::to_string(temp1 / temp2));
-				}
-			}
-		}
-		std::stack<std::string> temp = steck;
-		for (size_t count = 0; count < steck.size(); ++count) {
-			m_prefix += temp.top();
-			temp.pop();
-		}
-		return m_prefix;
+	std::string getPost() {
+		std::string temp = "";
+		for (size_t count = 0; count < m_postfix.size(); ++count)
+			temp += m_postfix[count].first;
+		return temp;
 	}
 
 	void printPostfix() {
