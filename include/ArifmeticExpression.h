@@ -39,13 +39,13 @@ public:
 
 	class constants {
 	public:
-		std::vector<std::pair<std::string, std::string>> m_list_of_const = { {"Pi", "3.14"} , {"G", "9.81"}, {"e", "2.71"} };
+		std::vector<std::pair<std::string, std::string>> m_list_of_const = { {"G", "9.81"}, {"e", "2.71"} };
 
 		size_t size() {
 			return m_list_of_const.size();
 		}
-		std::string nameOfConstByIndex(const size_t index) {
-			return m_list_of_const[index].first;
+		std::string valueOfConstByIndex(const size_t index) {
+			return m_list_of_const[index].second;
 		}
 		void getAllConstants() {
 			std::cout << "There are next constants:" << std::endl;
@@ -111,7 +111,7 @@ public:
 
 				for (size_t COUNT = 0; COUNT < m_constants.size(); ++COUNT) {
 					if (nameOfConst == m_constants.m_list_of_const[COUNT].first) {
-						temp.first = nameOfConst;
+						temp.first = m_constants.m_list_of_const[COUNT].second;
 						temp.second = priority::constants;
 						break;
 					}
@@ -123,7 +123,7 @@ public:
 
 						if (check_for_add_const == true) {
 							m_constants.addConstant(nameOfConst);
-							temp.first = m_constants.nameOfConstByIndex(COUNT + 1);
+							temp.first = m_constants.valueOfConstByIndex(m_constants.size() - 1);
 							temp.second = priority::constants;
 						}
 						else {

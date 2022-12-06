@@ -5,7 +5,9 @@
 int main(int argc, char** argv)
 {
 
-	Lecsems lecsems("1+2*3");
+	Lecsems lecsems("1+2*3+Pi+e+G");
+
+	std::cout << lecsems << std::endl;
 
 	ArithmeticÑalculation other = lecsems;
 	other.getPostfix();
