@@ -115,7 +115,7 @@ public:
 						temp.second = priority::constants;
 						break;
 					}
-					else {
+					else if (COUNT == m_constants.size() - 1) {
 						bool check_for_add_const;
 						std::cout << "IS " << nameOfConst << " CONST?" << std::endl;
 						std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;

@@ -5,7 +5,9 @@
 int main(int argc, char** argv)
 {
 
-	Lecsems lecsems("1+2*3+Pi+e+G");
+	//setlocale(LC_ALL, "Russian");
+
+	Lecsems lecsems("Pi+Pi");
 
 	std::cout << lecsems << std::endl;
 
