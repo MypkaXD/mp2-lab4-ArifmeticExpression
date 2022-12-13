@@ -367,7 +367,6 @@ private:
 	Lecsems m_expression;
 	std::vector<std::pair<std::string, Lecsems::priority>> m_data;
 	std::vector<std::pair<std::string, Lecsems::priority>> m_postfix;
-	std::vector<std::string> m_prefix;
 public:
 	ArithmeticСalculation(const Lecsems& expression) {
 		m_expression = expression;
@@ -465,7 +464,7 @@ public:
 					steck.pop();
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
-					std::cout << temp++ << ") " << leftOperand << "+" << rightOperand << "=" << leftOperand + std::stod(rightOperand) << std::endl;
+					//std::cout << temp++ << ") " << leftOperand << "+" << rightOperand << "=" << leftOperand + std::stod(rightOperand) << std::endl;
 					steck.push(std::make_pair(std::to_string(leftOperand + std::stod(rightOperand)), Lecsems::priority::operations_add_or_sub));
 				}
 				else if (m_postfix[count].first == "-") {
@@ -473,7 +472,7 @@ public:
 					steck.pop();
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
-					std::cout << temp++ << ") " << leftOperand << "-" << rightOperand << "=" << leftOperand - std::stod(rightOperand) << std::endl;
+					//std::cout << temp++ << ") " << leftOperand << "-" << rightOperand << "=" << leftOperand - std::stod(rightOperand) << std::endl;
 					steck.push(std::make_pair(std::to_string(leftOperand - std::stod(rightOperand)), Lecsems::priority::operations_add_or_sub));
 				}
 				else if (m_postfix[count].first == "*") {
@@ -481,7 +480,7 @@ public:
 					steck.pop();
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
-					std::cout << temp++ << ") " << leftOperand << "*" << rightOperand << "=" << leftOperand * std::stod(rightOperand) << std::endl;
+					//std::cout << temp++ << ") " << leftOperand << "*" << rightOperand << "=" << leftOperand * std::stod(rightOperand) << std::endl;
 					steck.push(std::make_pair(std::to_string(leftOperand * std::stod(rightOperand)), Lecsems::priority::operations_mult_or_div));
 				}
 				else if (m_postfix[count].first == "/") {
@@ -489,7 +488,7 @@ public:
 					steck.pop();
 					double leftOperand = std::stod(steck.top().first);
 					steck.pop();
-					std::cout << temp++ << ") " << leftOperand << "/" << rightOperand << "=" << leftOperand / std::stod(rightOperand) << std::endl;
+					//std::cout << temp++ << ") " << leftOperand << "/" << rightOperand << "=" << leftOperand / std::stod(rightOperand) << std::endl;
 					steck.push(std::make_pair(std::to_string(leftOperand / std::stod(rightOperand)), Lecsems::priority::operations_mult_or_div));
 				}
 			}
@@ -500,6 +499,15 @@ public:
 		for (size_t count = 0; count < m_postfix.size(); ++count) {
 			std::cout << m_postfix[count].first << " ";
 		}
+	}
+	std::string get_postfix() {
+		std::string postfix;
+		for (size_t count = 0; count < m_postfix.size(); ++count) {
+			postfix += m_postfix[count].first;
+			postfix += " ";
+		}
+		std::cout << postfix;
+		return postfix;
 	}
 };
 
