@@ -13,10 +13,18 @@ TASK:
 	2) поддержка констант и букв - DONE
 	3) поддержка функций - DONE
 	4) поддержка унарного минуса
+	5) NEW TASK сделать поддежку унарной операции и бинарной
+
+		1) идея: сделать доп класс для добавления операции - хорошая штука (или просто функцию)
+		2) при вычислении в польской записи переделать алгоритм в зависимости от типа операции (бинарная или унарная)
+		3) неправильная польская запись, переделать алгоритм sin(10+sin(10))==10 10 sin + sin
+
+
 */
 
 class Lecsems {
 private:
+
 	friend class ArithmeticСalculation;
 
 	static bool checkDoubleValue(const std::string& value) { // метод проверки числа на правльность
@@ -52,6 +60,7 @@ private:
 		functions,
 		operations_add_or_sub,
 		operations_mult_or_div,
+		unarn_operations,
 		breackets
 	};
 
@@ -74,38 +83,63 @@ private:
 		waiting_close_brackets
 	};
 
-	static class constants {
-	private:
-		std::vector<std::pair<std::string, double>> m_list_of_constants = { {"G", 9.81}, {"e", 2.71}, {"Pi", 3.14} }; // вектор пар из имени и значении константы
-	public:
-		size_t size() { // кол-во констант в векторе m_list_of_constants
-			return m_list_of_constants.size();
-		}
-		void print() const { // вывод всех констант парами (имя, значение)
-			std::cout << "LIST OF CONSTNTS: " << std::endl;
-			for (size_t count = 0; count < m_list_of_constants.size(); ++count) {
-				std::cout << m_list_of_constants[count].first << " = " << m_list_of_constants[count].second << std::endl;
-			}
-		}
-		double getValue(const size_t& index) { // возвращает значение константы 
-			return m_list_of_constants[index].second;
-		}
-		std::string getName(const size_t& index) { // возвращает имя константы
-			return m_list_of_constants[index].first;
-		}
-		std::pair < std::string, double> get(const size_t& index) { // возвращает пару коснтанты (имя, значение)
-			return m_list_of_constants[index];
-		}
-		void add(std::string& name, std::string& value) { // доавблаение константы
-			if (checkDoubleValue((value))) // проверка константы через статический метод check на правльность
-				m_list_of_constants.push_back(std::make_pair(name, std::stod(value))); // если вернулся 1, то пуш пары в вектор с константами
-			else
-				throw ("ERROR: wrong value of const"); // если вернулся 0, то вывод ошибки
-		}
+	enum class type_of_operands {
+		unary_operation,
+		binary_operation
 	};
 
+	std::vector<std::pair<std::string, type_of_operands>> m_list_of_operands = { {"+", type_of_operands::binary_operation}, {"*", type_of_operands::binary_operation} ,{"/", type_of_operands::binary_operation} ,{"-", type_of_operands::binary_operation} ,
+		{"^", type_of_operands::binary_operation} };
+
 	std::vector<std::pair<std::string, priority>> m_data;
-	constants m_constants;
+
+	/////////////////
+	/// CONSTANTS ///
+	/////////////////
+	std::vector<std::pair<std::string, double>> m_list_of_constants = { {"G", 9.81}, {"e", 2.71}, {"Pi", 3.14} }; // вектор пар из имени и значении константы
+	size_t size_of_list_of_consts() { // кол-во констант в векторе m_list_of_constants
+		return m_list_of_constants.size();
+	}
+	void print_list_of_consts() const { // вывод всех констант парами (имя, значение)
+		std::cout << "LIST OF CONSTNTS: " << std::endl;
+		for (size_t count = 0; count < m_list_of_constants.size(); ++count) {
+			std::cout << m_list_of_constants[count].first << " = " << m_list_of_constants[count].second << std::endl;
+		}
+	}
+	double get_value_of_const(const size_t& index) { // возвращает значение константы 
+		return m_list_of_constants[index].second;
+	}
+	std::string get_name_of_const(const size_t& index) { // возвращает имя константы
+		return m_list_of_constants[index].first;
+	}
+	std::pair < std::string, double> get_pair_of_const(const size_t& index) { // возвращает пару коснтанты (имя, значение)
+		return m_list_of_constants[index];
+	}
+	void add_const(std::string& name, std::string& value) { // доавблаение константы
+		if (checkDoubleValue((value))) // проверка константы через статический метод check на правльность
+			m_list_of_constants.push_back(std::make_pair(name, std::stod(value))); // если вернулся 1, то пуш пары в вектор с константами
+		else
+			throw ("ERROR: wrong value of const"); // если вернулся 0, то вывод ошибки
+	}
+	/////////////////
+	/// FUNCTIONS ///
+	/////////////////
+	std::vector<std::string> m_list_of_fucntions = { "sin", "cos", "tg", "ctg", "log", "exp" };
+	size_t size_of_list_of_funcs() { // кол-во функции в векторе m_list_of_priority
+		return m_list_of_fucntions.size();
+	}
+	void print_list_of_func() const { // вывод всех функций
+		std::cout << "LIST OF CONSTNTS: " << std::endl;
+		for (size_t count = 0; count < m_list_of_fucntions.size(); ++count) {
+			std::cout << m_list_of_fucntions[count] << std::endl;
+		}
+	}
+	std::string get_name_of_func(const size_t& index) { // возвращает имя функции
+		return m_list_of_fucntions[index];
+	}
+	void add_func(std::string& name) { // доавблаение функции
+		m_list_of_fucntions.push_back(name);
+	}
 
 public:
 	Lecsems() {}
@@ -147,16 +181,33 @@ public:
 
 				// проверяем, константа ли наша строка name
 				bool exitTemp = false; // вспомгательный "костыль", чтобы выйти из внешнего цикла, если константа найдется в векторе m_constants.m_list_of_constants
-				for (size_t COUNT = 0; COUNT < m_constants.size(); ++COUNT) {
-					if (name == m_constants.getName(COUNT)) {
-						m_data.push_back(std::make_pair(std::to_string(m_constants.getValue(COUNT)), priority::constants)); // пушим пару (значние константы, приоритет константы). !обязательно ли констнаты???
+				for (size_t COUNT = 0; COUNT < m_list_of_constants.size(); ++COUNT) {
+					if (name == get_name_of_const(COUNT)) {
+						m_data.push_back(std::make_pair(std::to_string(get_value_of_const(COUNT)), priority::constants)); // пушим пару (значние константы, приоритет константы). !обязательно ли констнаты???
 						exitTemp = true;
 						break;
 					}
 				}
-				if (exitTemp) // если консанта нашалась, то с помощью "костыля" переходим на следующую итерацию цикла
+				if (name.size() > 1) { // проверяем, функция ли наша строка name
+					for (size_t COUNT = 0; COUNT < size_of_list_of_funcs(); ++COUNT) {
+						if (name == get_name_of_func(COUNT)) {
+							m_data.push_back(std::make_pair(name, priority::functions));
+							exitTemp = true;
+							break;
+						}
+					}
+					if (!exitTemp) { // если функция не нашлась в векторе m_list_of_fucntions, то спрашиваем пользователя о добавлении новой функции
+						std::cout << "IS " << name << " FUNC?" << std::endl;
+						std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
+						bool check_for_add_func;
+						std::cin >> check_for_add_func;
+						if (check_for_add_func)
+							add_func(name);
+					}
+				}
+				if (exitTemp) // если консанта или функция нашалась, то с помощью "костыля" переходим на следующую итерацию цикла
 					continue;
-				// так, раз это не конснтанта значит все еще либо функция, либо буква, либо константа, которой нет в векторе констант
+				// так, раз это не конснтанта и не функция -> значит либо буква, либо константа, которой нет в векторе констант
 				// поэтому спросим пользователя, добавить ли новую константу
 
 				bool check_for_add_const; // булева переменная для проверки добавления константы
@@ -168,23 +219,14 @@ public:
 					std::cout << "ENTER THE VALUE OF " << name << ": ";
 					std::string value_of_const; // переменная для ввода значения константы
 					std::cin >> value_of_const;
-					m_constants.add(name, value_of_const); // добавляем константу, там заодно проверяется константа на правльность, хотя можно все равно сломать, если ввести допустим не цифру а какой-нибудь оператор(надо будет это продумать)
+					add_const(name, value_of_const); // добавляем константу, там заодно проверяется константа на правльность, хотя можно все равно сломать, если ввести допустим не цифру а какой-нибудь оператор(надо будет это продумать)
 					m_data.push_back(std::make_pair(value_of_const, priority::constants));
 				}
 				else { // если 0, то значит 100% не константа
-					if (name.size() == 1) // глупая проверка, но РАБОЧАЯ xD если name из одного символа, то 100% буква, ибо нет функций из одной буквы (я не знаю такой)
-						m_data.push_back(std::make_pair(name, priority::letters));
-					else m_data.push_back(std::make_pair(name, priority::functions));
+					m_data.push_back(std::make_pair(name, priority::letters));
 				}
 			}
 		}
-	}
-	Lecsems& operator=(const Lecsems& other) {
-		if (this == &other)
-			return *this;
-		m_constants = other.m_constants;
-		m_data = other.m_data;
-		return *this;
 	}
 
 	bool check() { // функция на проверку лексем
@@ -456,8 +498,11 @@ public:
 				m_postfix[count].second = Lecsems::priority::numbers;
 				steck.push(m_postfix[count]);
 			}
-			else if (m_postfix[count].second == Lecsems::priority::functions)
+			else if (m_postfix[count].second == Lecsems::priority::functions) {
+				//std::string rightOperand = steck.top().first;
 				steck.push(m_postfix[count]);
+
+			}
 			else if (m_postfix[count].second == Lecsems::priority::operations_add_or_sub || m_postfix[count].second == Lecsems::priority::operations_mult_or_div) {
 				if (m_postfix[count].first == "+") {
 					std::string rightOperand = steck.top().first;
