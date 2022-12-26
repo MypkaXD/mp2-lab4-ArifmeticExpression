@@ -83,14 +83,6 @@ private:
 		waiting_close_brackets
 	};
 
-	enum class type_of_operands {
-		unary_operation,
-		binary_operation
-	};
-
-	std::vector<std::pair<std::string, type_of_operands>> m_list_of_operands = { {"+", type_of_operands::binary_operation}, {"*", type_of_operands::binary_operation} ,{"/", type_of_operands::binary_operation} ,{"-", type_of_operands::binary_operation} ,
-		{"^", type_of_operands::binary_operation} };
-
 	std::vector<std::pair<std::string, priority>> m_data;
 
 	/////////////////
@@ -129,7 +121,7 @@ private:
 		return m_list_of_fucntions.size();
 	}
 	void print_list_of_func() const { // вывод всех функций
-		std::cout << "LIST OF CONSTNTS: " << std::endl;
+		std::cout << "LIST OF FUNCTIONS: " << std::endl;
 		for (size_t count = 0; count < m_list_of_fucntions.size(); ++count) {
 			std::cout << m_list_of_fucntions[count] << std::endl;
 		}
@@ -139,6 +131,37 @@ private:
 	}
 	void add_func(std::string& name) { // доавблаение функции
 		m_list_of_fucntions.push_back(name);
+	}
+	/////////////////
+	/// OPERATION ///
+	/////////////////
+	enum class type_of_operation {
+		unary_operation,
+		binary_operation
+	};
+
+	std::vector<std::pair<std::string, type_of_operation>> m_list_of_operations = { {"+", type_of_operation::binary_operation}, {"*", type_of_operation::binary_operation} ,{"/", type_of_operation::binary_operation} ,{"-", type_of_operation::binary_operation} ,
+		{"^", type_of_operation::binary_operation} , {"!", type_of_operation::unary_operation} };
+
+	size_t size_of_list_of_operation() { // кол-во операндов в векторе m_list_of_operations
+		return m_list_of_operations.size();
+	}
+	void print_list_of_operation() const { // вывод всех функций
+		std::cout << "LIST OF OPERANDS: " << std::endl;
+		for (size_t count = 0; count < m_list_of_operations.size(); ++count) {
+			std::cout << m_list_of_operations[count].first << " = ";
+			if (m_list_of_operations[count].second == type_of_operation::binary_operation)
+				std::cout << "binary operation" << std::endl;
+			else std::cout << "unary operation" << std::endl;
+		}
+	}
+	std::string get_operation(const size_t& index) { // возвращает имя функции
+		return m_list_of_operations[index].first;
+	}
+	void add_operation(std::string& name, bool& type) { // доавблаение функции
+		if (type)
+			m_list_of_operations.push_back(std::make_pair(name, type_of_operation::binary_operation));
+		else m_list_of_operations.push_back(std::make_pair(name, type_of_operation::unary_operation));
 	}
 
 public:
@@ -171,16 +194,39 @@ public:
 					--count; // так как мы сделали один лишний ++count, надо сделать --count
 				}
 			}
-			else { // раз это не число, не оператор +,-,/,*,(,) то это либо название константы, либо какая-то буква, либо функция
+			else { // раз это не число, не оператор +,-,/,*,(,) то это либо название константы, либо какая-то буква, либо функция, ЛИБО НОВЫЙ ОПЕРАТОР
 				std::string name; // введем вспомогательную строку 
+				
+				bool exitTemp = false; // вспомгательный "костыль", чтобы выйти из внешнего цикла
+				
 				do {
 					name += other[count];
+
+					// если это какой-то новый оператор, то длина name == 1, в цикле do while он пройдет только do и сразу выйдет, поэтому надо его отловить
+					if (!(other[count] >= 65 && other[count] <= 90) || !(other[count] >= 97 && other[count] <= 122)) {
+						// сюда попадаем, если в name нет букв, а какой-то странный символ
+						print_list_of_operation();
+						std::cout << "IS " << name << " operand?" << std::endl;
+						bool check_for_add_operation;
+						std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
+						std::cout << "Waiting for input: ";
+						std::cin >> check_for_add_operation;
+						if (check_for_add_operation) {
+							std::cout << "Specify the type of operation. 1 - binary; 0 - unary" << std::endl;
+							std::cout << "Waiting for input: ";
+							std::cin >> check_for_add_operation;
+							add_operation(name, check_for_add_operation);
+							exitTemp = true;
+						}
+					}
 					++count;
 				} while (((other[count] >= 65 && other[count] <= 90) || (other[count] >= 97 && other[count] <= 122)) && count < other.size()); // делаем, пока это буква (большая или маленькая) или count выйдет за размеры строки
 				--count; // лишний ++, следовательно делаем --
 
+				if (exitTemp) // если это была операция -> переход на некст итерацию
+					continue;
+
 				// проверяем, константа ли наша строка name
-				bool exitTemp = false; // вспомгательный "костыль", чтобы выйти из внешнего цикла, если константа найдется в векторе m_constants.m_list_of_constants
 				for (size_t COUNT = 0; COUNT < m_list_of_constants.size(); ++COUNT) {
 					if (name == get_name_of_const(COUNT)) {
 						m_data.push_back(std::make_pair(std::to_string(get_value_of_const(COUNT)), priority::constants)); // пушим пару (значние константы, приоритет константы). !обязательно ли констнаты???
@@ -200,6 +246,7 @@ public:
 						std::cout << "IS " << name << " FUNC?" << std::endl;
 						std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
 						bool check_for_add_func;
+						std::cout << "Waiting for input: ";
 						std::cin >> check_for_add_func;
 						if (check_for_add_func)
 							add_func(name);
@@ -213,11 +260,13 @@ public:
 				bool check_for_add_const; // булева переменная для проверки добавления константы
 				std::cout << "IS " << name << " CONST?" << std::endl;
 				std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
+				std::cout << "Waiting for input: ";
 				std::cin >> check_for_add_const;
 
 				if (check_for_add_const == true) { // если 1, то добавляем константу
-					std::cout << "ENTER THE VALUE OF " << name << ": ";
+					std::cout << "ENTER THE VALUE OF " << name << std::endl;
 					std::string value_of_const; // переменная для ввода значения константы
+					std::cout << "Waiting for input: ";
 					std::cin >> value_of_const;
 					add_const(name, value_of_const); // добавляем константу, там заодно проверяется константа на правльность, хотя можно все равно сломать, если ввести допустим не цифру а какой-нибудь оператор(надо будет это продумать)
 					m_data.push_back(std::make_pair(value_of_const, priority::constants));
