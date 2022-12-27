@@ -44,7 +44,7 @@ TEST(Arithmetic—alculation, can_translate_to_postfix_2) {
 	ex.convertExpression();
 	ex.getPostfix();
 
-	std::string temp = "15 7 1 1 + - / 3 * 2 1 1 + + 15 * 7 200 1 + - / 3 * - 2 1 1 + + 15 7 1 1 + - / 3 * 2 1 1 + + - 15 7 1 1 + - / 3 * + 2 1 1 + + - * -";
+	std::string tmp = "15 7 1 1 + - / 3 * 2 1 1 + + 15 * 7 200 1 + - / 3 * - 2 1 1 + + 15 7 1 1 + - / 3 * 2 1 1 + + - 15 7 1 1 + - / 3 * + 2 1 1 + + - * -";
 
-	EXPECT_EQ(ex.get_postfix(), temp);
+	EXPECT_EQ(ex.get_postfix(), tmp);
 }
