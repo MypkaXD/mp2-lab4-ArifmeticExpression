@@ -6,6 +6,7 @@
 #include <vector>
 #include <stack>
 #include <math.h>
+#include <tuple>
 
 /*
 TASK:
@@ -53,16 +54,6 @@ private:
 		return true; // попадет сюда только в том случае, если строка = числу - правильная
 	}
 
-	enum class priority {
-		constants,
-		numbers,
-		letters,
-		functions,
-		operations_add_or_sub,
-		operations_mult_or_div,
-		unarn_operations,
-		breackets
-	};
 
 	enum class check_value {
 		error,
@@ -83,7 +74,23 @@ private:
 		waiting_close_brackets
 	};
 
-	std::vector<std::pair<std::string, priority>> m_data;
+	enum class Type_of_operation {
+		non_operation,
+		unary_operation,
+		binary_operation
+	};
+	enum class Priority {
+		numbers,
+		letters,
+		constants,
+		functions,
+		operations_add_or_sub,
+		operations_mult_or_div,
+		own_operations, // типо факториала
+		breackets
+	};
+
+	std::vector<std::tuple<std::string, Type_of_operation, Priority>> m_data;
 
 	/////////////////
 	/// CONSTANTS ///
@@ -116,7 +123,7 @@ private:
 	/////////////////
 	/// FUNCTIONS ///
 	/////////////////
-	std::vector<std::string> m_list_of_fucntions = { "sin", "cos", "tg", "ctg", "log", "exp" };
+	std::vector<std::string> m_list_of_fucntions = { "sin", "cos", "tg", "ctg", "ln", "exp" };
 	size_t size_of_list_of_funcs() { // кол-во функции в векторе m_list_of_priority
 		return m_list_of_fucntions.size();
 	}
@@ -135,13 +142,9 @@ private:
 	/////////////////
 	/// OPERATION ///
 	/////////////////
-	enum class type_of_operation {
-		unary_operation,
-		binary_operation
-	};
 
-	std::vector<std::pair<std::string, type_of_operation>> m_list_of_operations = { {"+", type_of_operation::binary_operation}, {"*", type_of_operation::binary_operation} ,{"/", type_of_operation::binary_operation} ,{"-", type_of_operation::binary_operation} ,
-		{"^", type_of_operation::binary_operation} , {"!", type_of_operation::unary_operation} };
+	std::vector<std::pair<std::string, Type_of_operation>> m_list_of_operations = {{"+", Type_of_operation::binary_operation}, {"*", Type_of_operation::binary_operation} ,{"/", Type_of_operation::binary_operation} ,{"-", Type_of_operation::binary_operation} ,
+		{"^", Type_of_operation::binary_operation} , {"!", Type_of_operation::unary_operation} };
 
 	size_t size_of_list_of_operation() { // кол-во операндов в векторе m_list_of_operations
 		return m_list_of_operations.size();
@@ -150,7 +153,7 @@ private:
 		std::cout << "LIST OF OPERANDS: " << std::endl;
 		for (size_t count = 0; count < m_list_of_operations.size(); ++count) {
 			std::cout << m_list_of_operations[count].first << " = ";
-			if (m_list_of_operations[count].second == type_of_operation::binary_operation)
+			if (m_list_of_operations[count].second == Type_of_operation::binary_operation)
 				std::cout << "binary operation" << std::endl;
 			else std::cout << "unary operation" << std::endl;
 		}
@@ -160,8 +163,8 @@ private:
 	}
 	void add_operation(std::string& name, bool& type) { // доавблаение функции
 		if (type)
-			m_list_of_operations.push_back(std::make_pair(name, type_of_operation::binary_operation));
-		else m_list_of_operations.push_back(std::make_pair(name, type_of_operation::unary_operation));
+			m_list_of_operations.push_back(std::make_pair(name, Type_of_operation::binary_operation));
+		else m_list_of_operations.push_back(std::make_pair(name, Type_of_operation::unary_operation));
 	}
 
 public:
@@ -169,18 +172,22 @@ public:
 	Lecsems(const std::string& other) {
 		for (size_t count = 0; count < other.size(); ++count) { // проходим каждый символ строки other
 
-			if (other[count] == '+' || other[count] == '-') // если + или -, то пуш в вектор (оператор + или -, приортет операции + или -)
+			if (other[count] == '+' || other[count] == '-')
 				if (other[count] == '+')
-					m_data.push_back(std::make_pair("+", priority::operations_add_or_sub));
-				else m_data.push_back(std::make_pair("-", priority::operations_add_or_sub));
-			else if (other[count] == '*' || other[count] == '/') // если * или /, то пуш в вектор (оператор * или /, приортет операции * или /)
+					m_data.push_back({ "+" , Type_of_operation::binary_operation, Priority::operations_add_or_sub });
+				else m_data.push_back({ "-" , Type_of_operation::binary_operation, Priority::operations_add_or_sub });
+			else if (other[count] == '*' || other[count] == '/')
 				if (other[count] == '*')
-					m_data.push_back(std::make_pair("*", priority::operations_mult_or_div));
-				else m_data.push_back(std::make_pair("/", priority::operations_mult_or_div));
-			else if (other[count] == '(' || other[count] == ')') // если ( или ), то пуш в вектор ( скобки ( или ) , приортет скобки)
+					m_data.push_back({ "*" , Type_of_operation::binary_operation, Priority::operations_mult_or_div });
+				else m_data.push_back({ "/" , Type_of_operation::binary_operation, Priority::operations_mult_or_div });
+			else if (other[count] == '(' || other[count] == ')')
 				if (other[count] == '(')
-					m_data.push_back(std::make_pair("(", priority::breackets));
-				else m_data.push_back(std::make_pair(")", priority::breackets));
+					m_data.push_back({ "(" , Type_of_operation::non_operation, Priority::breackets });
+				else m_data.push_back({ ")" , Type_of_operation::non_operation, Priority::breackets });
+			else if (other[count] == '!')
+				m_data.push_back({ "!" , Type_of_operation::unary_operation, Priority::own_operations });
+			else if (other[count] == '^')
+				m_data.push_back({ "^" , Type_of_operation::binary_operation, Priority::own_operations });
 			else if ((other[count] >= 49 && other[count] <= 57) || other[count] == '.') { // если число (проверка через ASCII-таблицу) или точка. Если все ок, то запушим сразу число типа дабл, то есть сразу поддержка осуществляется вещественных чисел
 				std::string temp; // вспомогательная строка
 				do {
@@ -190,54 +197,32 @@ public:
 				if (!checkDoubleValue(temp)) // сюда попадаем с сформаировавщейся строкой числа (она может быть неправльной, поэтому идем проверять число на правильность)
 					throw ("ERROR: wrong number"); // если число "плохое", то ERROR
 				else { // если число норм, то пушим пару в вектор (число в виде строки, и приортиет числа)
-					m_data.push_back(std::make_pair(temp, priority::numbers));
+					m_data.push_back({ temp , Type_of_operation::non_operation, Priority::numbers });
 					--count; // так как мы сделали один лишний ++count, надо сделать --count
 				}
 			}
-			else { // раз это не число, не оператор +,-,/,*,(,) то это либо название константы, либо какая-то буква, либо функция, ЛИБО НОВЫЙ ОПЕРАТОР
+			else {
 				std::string name; // введем вспомогательную строку 
-				
-				bool exitTemp = false; // вспомгательный "костыль", чтобы выйти из внешнего цикла
-				
 				do {
 					name += other[count];
-
-					// если это какой-то новый оператор, то длина name == 1, в цикле do while он пройдет только do и сразу выйдет, поэтому надо его отловить
-					if (!(other[count] >= 65 && other[count] <= 90) || !(other[count] >= 97 && other[count] <= 122)) {
-						// сюда попадаем, если в name нет букв, а какой-то странный символ
-						print_list_of_operation();
-						std::cout << "IS " << name << " operand?" << std::endl;
-						bool check_for_add_operation;
-						std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
-						std::cout << "Waiting for input: ";
-						std::cin >> check_for_add_operation;
-						if (check_for_add_operation) {
-							std::cout << "Specify the type of operation. 1 - binary; 0 - unary" << std::endl;
-							std::cout << "Waiting for input: ";
-							std::cin >> check_for_add_operation;
-							add_operation(name, check_for_add_operation);
-							exitTemp = true;
-						}
-					}
 					++count;
 				} while (((other[count] >= 65 && other[count] <= 90) || (other[count] >= 97 && other[count] <= 122)) && count < other.size()); // делаем, пока это буква (большая или маленькая) или count выйдет за размеры строки
 				--count; // лишний ++, следовательно делаем --
 
-				if (exitTemp) // если это была операция -> переход на некст итерацию
-					continue;
+				bool exitTemp = false; // вспомгательный "костыль", чтобы выйти из внешнего цикла, если константа найдется в векторе m_constants.m_list_of_constants
 
-				// проверяем, константа ли наша строка name
 				for (size_t COUNT = 0; COUNT < m_list_of_constants.size(); ++COUNT) {
 					if (name == get_name_of_const(COUNT)) {
-						m_data.push_back(std::make_pair(std::to_string(get_value_of_const(COUNT)), priority::constants)); // пушим пару (значние константы, приоритет константы). !обязательно ли констнаты???
+						m_data.push_back({ std::to_string(get_value_of_const(COUNT)),Type_of_operation::non_operation ,Priority::constants }); // пушим пару (значние константы, приоритет константы). !обязательно ли констнаты???
 						exitTemp = true;
 						break;
 					}
 				}
+
 				if (name.size() > 1) { // проверяем, функция ли наша строка name
 					for (size_t COUNT = 0; COUNT < size_of_list_of_funcs(); ++COUNT) {
 						if (name == get_name_of_func(COUNT)) {
-							m_data.push_back(std::make_pair(name, priority::functions));
+							m_data.push_back({ name,Type_of_operation::unary_operation ,Priority::functions});
 							exitTemp = true;
 							break;
 						}
@@ -246,47 +231,54 @@ public:
 						std::cout << "IS " << name << " FUNC?" << std::endl;
 						std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
 						bool check_for_add_func;
-						std::cout << "Waiting for input: ";
 						std::cin >> check_for_add_func;
 						if (check_for_add_func)
 							add_func(name);
+						m_data.push_back({ name,Type_of_operation::unary_operation ,Priority::functions });
+						exitTemp = true;
 					}
 				}
 				if (exitTemp) // если консанта или функция нашалась, то с помощью "костыля" переходим на следующую итерацию цикла
 					continue;
 				// так, раз это не конснтанта и не функция -> значит либо буква, либо константа, которой нет в векторе констант
 				// поэтому спросим пользователя, добавить ли новую константу
-
 				bool check_for_add_const; // булева переменная для проверки добавления константы
 				std::cout << "IS " << name << " CONST?" << std::endl;
 				std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
-				std::cout << "Waiting for input: ";
 				std::cin >> check_for_add_const;
 
 				if (check_for_add_const == true) { // если 1, то добавляем константу
-					std::cout << "ENTER THE VALUE OF " << name << std::endl;
+					std::cout << "ENTER THE VALUE OF " << name << ": ";
 					std::string value_of_const; // переменная для ввода значения константы
-					std::cout << "Waiting for input: ";
 					std::cin >> value_of_const;
 					add_const(name, value_of_const); // добавляем константу, там заодно проверяется константа на правльность, хотя можно все равно сломать, если ввести допустим не цифру а какой-нибудь оператор(надо будет это продумать)
-					m_data.push_back(std::make_pair(value_of_const, priority::constants));
+					m_data.push_back({ value_of_const,Type_of_operation::non_operation ,Priority::constants });
 				}
 				else { // если 0, то значит 100% не константа
-					m_data.push_back(std::make_pair(name, priority::letters));
+					m_data.push_back({ name,Type_of_operation::non_operation ,Priority::letters });
 				}
 			}
 		}
 	}
-
-	bool check() { // функция на проверку лексем
+	Lecsems& operator=(const Lecsems& other) {
+		if (this == &other)
+			return *this;
+		m_list_of_operations = other.m_list_of_operations;
+		m_list_of_fucntions = other.m_list_of_fucntions;
+		m_list_of_constants = other.m_list_of_constants;
+		m_data = other.m_data;
+		return *this;
+	}
+	bool check() {
 		state status = state::start;
 		size_t count_of_breckets = 0;
+		
 		for (size_t count = 0; count < m_data.size(); ++count) { // проходим вектор, состоящий из пар (значение, приортет)
 			/*
 			Лексема у нас может быть следующих типов:
 				1) Скобка
-				2) Оператор + или -
-				3) Оператор * или /
+				2) Бинарный оператор
+				3) Унарный опертор
 				4) Буква
 				5) Константа
 				6) Цифра
@@ -298,23 +290,23 @@ public:
 
 				/*
 					Тут может быть:
-						1) Скобка, только ( -> ждем либо унарный опертор - или буква, цифра, функция, константа, либо скобка (
+						1) Скобка, только ( -> ждем либо унарный опертор - либо буква, цифра, функция, константа, либо скобка (
 								если ) -> сразу в error
-						2) Если оператор * или / -> сразу в error
-						3) Если оперотр + или - -> сразу в error
+						2) Если бинарный опертор -> сразу в error
+						3) Если унарный опертор -> сразу в error
 						4) Буква, константа или цифра - все ок
 						5) Функция -> ждем скобку (
 				*/
 
-				if (m_data[count].first == "(") { // после ( может быть все, что на старте
+				if (std::get<std::string>(m_data[count]) == "(") { // после ( может быть либо унарный -, либо операнд, либо скобка
 					++count_of_breckets;
 					status = Lecsems::state::wait_unarn_op_or_operand_or_brackets;
 				}
-				else if (m_data[count].second == priority::constants || m_data[count].second == priority::letters || m_data[count].second == priority::numbers) // после числа, константы или буква, может идти только опертор или закрывающаяся скобка
+				else if (std::get<Priority>(m_data[count]) == Priority::constants || std::get<Priority>(m_data[count]) == Priority::letters || std::get<Priority>(m_data[count]) == Priority::numbers) // после числа, константы или буква, может идти только опертор или закрывающаяся скобка
 					status = Lecsems::state::waiting_operator_or_brackets;
-				else if (m_data[count].second == priority::functions) // после функции мы ждем только открывающуюся скобку
+				else if (std::get<Priority>(m_data[count]) == Priority::functions) // после функции мы ждем только открывающуюся скобку
 					status = Lecsems::state::waiting_open_brackets;
-				else if (m_data[count].first == ")") // если скобка ), то еррор
+				else if (std::get<std::string>(m_data[count]) == ")") // если скобка ), то еррор
 					status = Lecsems::state::error;
 				else // остальные случаи = еррор
 					status = Lecsems::state::error;
@@ -327,7 +319,7 @@ public:
 						2) скобка -> ошибка
 						3) ... -> ошибка
 				*/
-				if (m_data[count].second == priority::operations_add_or_sub || m_data[count].second == priority::operations_mult_or_div)
+				if (std::get<Type_of_operation>(m_data[count]) == Type_of_operation::binary_operation)
 					status = Lecsems::state::start;
 				else status = Lecsems::state::error;
 				break;
@@ -340,7 +332,7 @@ public:
 						2) остальные случаи -> еррор
 				*/
 
-				if (m_data[count].first == "(") {
+				if (std::get<std::string>(m_data[count]) == "(") {
 					++count_of_breckets;
 					status = Lecsems::state::start;
 				}
@@ -353,16 +345,22 @@ public:
 					Тут может быть:
 						1) скобка ) -> ждем либо оператор, либо скобку )
 						2) скобка (
-						3) оператор
+						3) бинарный опертор
 						4) число, константа, буква
+						5) факториал
+						6) степень
 				*/
 
-				if (m_data[count].first == ")") {
+				if (std::get<std::string>(m_data[count]) == ")") {
 					--count_of_breckets;
 					status = Lecsems::state::waiting_operator_or_brackets;
 				}
-				else if (m_data[count].second == priority::operations_add_or_sub || m_data[count].second == priority::operations_mult_or_div)
+				else if (std::get<Type_of_operation>(m_data[count]) == Type_of_operation::binary_operation)
 					status = Lecsems::state::start;
+				else if (std::get<std::string>(m_data[count]) == "!")
+					status = Lecsems::state::waiting_close_brackets;
+				else if (std::get<std::string>(m_data[count]) == "^")
+					status = Lecsems::state::wait_operand;
 				else status = Lecsems::state::error;
 				break;
 
@@ -370,6 +368,7 @@ public:
 				/*
 					Тут могла быть ваша реклама
 				*/
+
 				break;
 
 			case Lecsems::state::wait_unarn_op_or_operand_or_brackets:
@@ -383,13 +382,13 @@ public:
 						5) остальные случаи -> еррор
 				*/
 
-				if (m_data[count].first == "-")
+				if (std::get<std::string>(m_data[count]) == "-")
 					status = Lecsems::state::wait_operand;
-				else if (m_data[count].second == priority::numbers || m_data[count].second == priority::constants || m_data[count].second == priority::letters)
+				else if (std::get<Priority>(m_data[count]) == Priority::constants || std::get<Priority>(m_data[count]) == Priority::letters || std::get<Priority>(m_data[count]) == Priority::numbers)
 					status = Lecsems::state::waiting_operator_or_brackets;
-				else if (m_data[count].second == priority::functions)
+				else if (std::get<Priority>(m_data[count]) == Priority::functions)
 					status == Lecsems::state::waiting_open_brackets;
-				else if (m_data[count].first == "(") {
+				else if (std::get<std::string>(m_data[count]) == "(") {
 					status = Lecsems::state::start;
 					++count_of_breckets;
 				}
@@ -405,8 +404,8 @@ public:
 						3) остальные случаи -> еррор
 				*/
 
-				if (m_data[count].second == priority::numbers || m_data[count].second == priority::constants || m_data[count].second == priority::letters) status = Lecsems::state::waiting_close_brackets;
-				else if (m_data[count].second == priority::functions) status = Lecsems::state::waiting_open_brackets;
+				if (std::get<Priority>(m_data[count]) == Priority::constants || std::get<Priority>(m_data[count]) == Priority::letters || std::get<Priority>(m_data[count]) == Priority::numbers) status = Lecsems::state::waiting_close_brackets;
+				else if (std::get<Priority>(m_data[count]) == Priority::functions) status = Lecsems::state::waiting_open_brackets;
 				else status = Lecsems::state::error;
 				break;
 
@@ -418,7 +417,7 @@ public:
 						2) остальные случаи -> еррор
 				*/
 
-				if (m_data[count].first == ")") {
+				if (std::get<std::string>(m_data[count]) == ")") {
 					status = Lecsems::state::waiting_operator_or_brackets;
 					--count_of_breckets;
 				}
@@ -431,22 +430,44 @@ public:
 				return false;
 			}
 		}
-		return !count_of_breckets; // если число скобок == 0, то возвращам true, в остльных случаях возвращаем false
+
+		if (!count_of_breckets) { // если число скобок == 0, то возвращам true, в остльных случаях возвращаем false
+			convertExpression();
+			return 1;
+		}
+		else return 0;
 	}
+
+	void convertExpression() { // вариант, как преобразовать выражение с унарным минусом в нормальное выражение (чтобы оно работало)
+		for (size_t count = 0; count < m_data.size(); ++count) {
+			if (std::get<std::string>(m_data[count]) == "(" && std::get<std::string>(m_data[count + 1]) == "-" && (std::get<Lecsems::Priority>(m_data[count + 2]) == Lecsems::Priority::numbers || std::get<Lecsems::Priority>(m_data[count + 2]) == Lecsems::Priority::constants || std::get<Lecsems::Priority>(m_data[count + 2]) == Lecsems::Priority::letters) && std::get<std::string>(m_data[count + 3]) == ")") {
+				std::get<Lecsems::Type_of_operation>(m_data[count + 1]) = Lecsems::Type_of_operation::unary_operation;
+			}
+		}
+	}
+
 	friend std::ostream& operator<<(std::ostream& out, const Lecsems& other) {
 		for (size_t count = 0; count < other.m_data.size(); ++count) {
-			out << "LECSEM IS " << other.m_data[count].first << "; PRIORITET IS ";
-			switch (other.m_data[count].second) {
-			case (priority::numbers):
-			case (priority::letters):
-			case (priority::constants): out << "1\n"; break;
-			case (priority::functions): out << "FUNC\n"; break;
-
-			case (priority::operations_add_or_sub): out << "2\n"; break;
-			case (priority::operations_mult_or_div): out << "3\n"; break;
-			case (priority::breackets): out << "4\n"; break;
-
+			out << "LECSEM IS " << std::get<std::string>(other.m_data[count]) << "; PRIORITET IS ";
+			switch (std::get<Priority>(other.m_data[count])) {
+			case (Priority::numbers):
+			case (Priority::letters):
+			case (Priority::constants): out << "OPERAND"; break;
+			case (Priority::functions): out << "FUNC"; break;
+			case (Priority::operations_add_or_sub): out << "ADD OR SUB"; break;
+			case (Priority::operations_mult_or_div): out << "MULT OR DIV"; break;
+			case (Priority::own_operations): out << "OWN OPERATIONS"; break;
+			case (Priority::breackets): out << "BREACKETS"; break;
 			default: break;
+			}
+			out << "; TYPE OF OPERATORS IS ";
+			switch (std::get<Type_of_operation>(other.m_data[count]))
+			{
+			case (Type_of_operation::non_operation): out << "NON OPERATOR\n"; break;
+			case (Type_of_operation::unary_operation): out << "UNARY OPERATORS\n"; break;
+			case (Type_of_operation::binary_operation): out << "BINARY OPERATORS\n"; break;
+			default:
+				break;
 			}
 		}
 		return out;
@@ -456,63 +477,37 @@ public:
 class ArithmeticСalculation {
 private:
 	Lecsems m_expression;
-	std::vector<std::pair<std::string, Lecsems::priority>> m_data;
-	std::vector<std::pair<std::string, Lecsems::priority>> m_postfix;
+	std::vector<std::tuple<std::string, Lecsems::Type_of_operation, Lecsems::Priority>> m_data;
+	std::vector<std::tuple<std::string, Lecsems::Type_of_operation, Lecsems::Priority>> m_postfix;
+
 public:
-	ArithmeticСalculation(const Lecsems& expression) {
+	ArithmeticСalculation(Lecsems& expression) {
 		m_expression = expression;
 		if (!m_expression.check())
 			throw ("ERROR: wrong expression");
+		m_data = m_expression.m_data;
 	}
 
-	void convertExpression() { // вариант, как преобразовать выражение с унарным минусом в нормальное выражение (чтобы оно работало)
-		for (size_t count = 0; count < m_expression.m_data.size(); ++count) {
-			if (m_expression.m_data[count].first == "(" && m_expression.m_data[count + 1].first == "-" && m_expression.m_data[count + 2].second == Lecsems::priority::numbers && m_expression.m_data[count + 3].first == ")") {
-				std::string temp = "-";
-				temp += m_expression.m_data[count + 2].first;
-				m_data.push_back(std::make_pair(temp, Lecsems::priority::numbers));
-				count += 3;
-			}
-			else if (m_expression.m_data[count].first == "(" && m_expression.m_data[count + 1].first == "-" && m_expression.m_data[count + 2].second == Lecsems::priority::constants && m_expression.m_data[count + 3].first == ")") {
-				m_data.push_back(std::make_pair(std::to_string(std::stod(m_expression.m_data[count + 2].first) * (-1)), Lecsems::priority::numbers));
-				count += 3;
-			}
-			else if (m_expression.m_data[count].first == "(" && m_expression.m_data[count + 1].first == "-" && m_expression.m_data[count + 2].second == Lecsems::priority::letters && m_expression.m_data[count + 3].first == ")") {
-				std::cout << "ENTER THE VALUE OF " << m_expression.m_data[count + 2].first << ": ";
-				std::string value;
-				std::cin >> value;
-				if (Lecsems::checkDoubleValue(value))
-					m_data.push_back(std::make_pair(std::to_string(std::stod(value) * (-1)), Lecsems::priority::numbers));
-				else throw ("ERROR: wrong value");
-				count += 3;
-			}
-			else m_data.push_back(m_expression.m_data[count]);
-		}
-	}
-
-	std::vector<std::pair<std::string, Lecsems::priority>> getPostfix() {
-		std::stack<std::pair<std::string, Lecsems::priority>> stack;
-
+	std::vector<std::tuple<std::string, Lecsems::Type_of_operation, Lecsems::Priority>> getPostfix() {
+		std::stack<std::tuple<std::string, Lecsems::Type_of_operation, Lecsems::Priority>> stack;
 		for (size_t count = 0; count < m_data.size(); ++count) {
-			if (m_data[count].second == Lecsems::priority::numbers)
+			if (std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::numbers || std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::letters || std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::constants)
 				m_postfix.push_back(m_data[count]);
-			else if (m_data[count].second == Lecsems::priority::letters)
-				m_postfix.push_back(m_data[count]);
-			else if (m_data[count].second == Lecsems::priority::constants)
-				m_postfix.push_back(m_data[count]);
-			else if (m_data[count].second == Lecsems::priority::functions)
-				m_postfix.push_back(m_data[count]);
-			else if (m_data[count].first == "(")
+			else if (std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::functions || std::get<Lecsems::Type_of_operation>(m_data[count]) == Lecsems::Type_of_operation::unary_operation)
 				stack.push(m_data[count]);
-			else if (m_data[count].first == ")") {
-				while (stack.top().first != "(") {
+			else if (std::get<std::string>(m_data[count]) == "(")
+				stack.push(m_data[count]);
+			else if (std::get<std::string>(m_data[count]) == ")") {
+				while (std::get<std::string>(stack.top()) != "(") {
 					m_postfix.push_back(stack.top());
 					stack.pop();
 				}
 				stack.pop();
 			}
-			else if (m_data[count].second == Lecsems::priority::operations_add_or_sub || m_data[count].second == Lecsems::priority::operations_mult_or_div) {
-				while (!stack.empty() && ((m_data[count].second == Lecsems::priority::operations_add_or_sub && (stack.top().second == Lecsems::priority::operations_add_or_sub || stack.top().second == Lecsems::priority::operations_mult_or_div)) || (m_data[count].second == Lecsems::priority::operations_mult_or_div && stack.top().second == Lecsems::priority::operations_mult_or_div))) {
+			else if (std::get<std::string>(m_data[count]) == "^")
+				stack.push(m_data[count]);
+			else if (std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::operations_add_or_sub || std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::operations_mult_or_div) {
+				while (!stack.empty() && ((std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::operations_add_or_sub && (std::get<Lecsems::Priority>(stack.top()) == Lecsems::Priority::operations_add_or_sub || std::get<Lecsems::Priority>(stack.top()) == Lecsems::Priority::operations_mult_or_div)) || (std::get<Lecsems::Priority>(m_data[count]) == Lecsems::Priority::operations_mult_or_div && std::get<Lecsems::Priority>(stack.top()) == Lecsems::Priority::operations_mult_or_div))) {
 					m_postfix.push_back(stack.top());
 					stack.pop();
 				}
@@ -531,77 +526,116 @@ public:
 	}
 
 	std::string calculating() {
-		std::stack<std::pair<std::string, Lecsems::priority>> steck;
+		getPostfix();
+
+		std::stack<std::string> stack;
 
 		size_t temp = 1;
 
 		for (size_t count = 0; count < m_postfix.size(); ++count) {
-			if (m_postfix[count].second == Lecsems::priority::numbers || m_postfix[count].second == Lecsems::priority::constants) {
-				steck.push(m_postfix[count]);
+			if (std::get<Lecsems::Priority>(m_postfix[count]) == Lecsems::Priority::numbers || std::get<Lecsems::Priority>(m_postfix[count]) == Lecsems::Priority::constants) {
+				stack.push(std::get<std::string>(m_postfix[count]));
 			}
-			else if (m_postfix[count].second == Lecsems::priority::letters) {
-				std::cout << "ENTER THE VALUE OF " << m_postfix[count].first << ": ";
-				std::cin >> m_postfix[count].first;
-				if (!m_expression.checkDoubleValue(m_postfix[count].first))
+			else if (std::get<Lecsems::Priority>(m_postfix[count]) == Lecsems::Priority::letters) {
+				std::cout << "ENTER THE VALUE OF " << std::get<0>(m_postfix[count]) << ": ";
+				std::cin >> std::get<std::string>(m_postfix[count]);
+				if (!m_expression.checkDoubleValue(std::get<std::string>(m_postfix[count])))
 					throw ("ERROR: wrong number");
-				m_postfix[count].second = Lecsems::priority::numbers;
-				steck.push(m_postfix[count]);
+				std::get<Lecsems::Priority>(m_postfix[count]) = Lecsems::Priority::numbers;
+				stack.push(std::get<std::string>(m_postfix[count]));
 			}
-			else if (m_postfix[count].second == Lecsems::priority::functions) {
-				//std::string rightOperand = steck.top().first;
-				steck.push(m_postfix[count]);
-
+			else if (std::get<Lecsems::Type_of_operation>(m_postfix[count]) == Lecsems::Type_of_operation::unary_operation) {
+				std::string operand = stack.top();
+				stack.pop();
+				if (std::get<std::string>(m_postfix[count]) == "sin")
+					stack.push(std::to_string(sin(std::stod(operand))));
+				else if (std::get<std::string>(m_postfix[count]) == "cos")
+					stack.push(std::to_string(cos(std::stod(operand))));
+				else if (std::get<std::string>(m_postfix[count]) == "tg")
+					stack.push(std::to_string(tan(std::stod(operand))));
+				else if (std::get<std::string>(m_postfix[count]) == "ln") {
+					if (std::stod(operand) <= 0)
+						throw ("ERROR: wrong log expression");
+					stack.push(std::to_string(log10(std::stod(operand))));
+				}
+				else if (std::get<std::string>(m_postfix[count]) == "exp")
+					stack.push(std::to_string(exp(std::stod(operand))));
+				else if (std::get<std::string>(m_postfix[count]) == "-")
+					stack.push(std::to_string((-1)*(std::stod(operand))));
+				else if (std::get<std::string>(m_postfix[count]) == "!") {
+					std::string reuslt = "1";
+					for (size_t fact_iterator = 2; fact_iterator <= std::stod(operand); ++fact_iterator)
+						reuslt = std::to_string(std::stod(reuslt) * fact_iterator);
+					stack.push(reuslt);
+				}
+				/*
+					если Вы добавли какую-то новую функцию, необходимо вставить её сюда.
+					По шаблону:
+					else if (std::get<std::string>(m_postfix[count]) == "FUNC") {
+					if (std::stod(operand) <= 0) // если есть какие-то ограничения
+						throw ("ERROR: wrong FUNC expression");
+					stack.push(std::to_string(FUNC(std::stod(operand))));
+				*/
 			}
-			else if (m_postfix[count].second == Lecsems::priority::operations_add_or_sub || m_postfix[count].second == Lecsems::priority::operations_mult_or_div) {
-				if (m_postfix[count].first == "+") {
-					std::string rightOperand = steck.top().first;
-					steck.pop();
-					double leftOperand = std::stod(steck.top().first);
-					steck.pop();
+			else if (std::get<Lecsems::Type_of_operation>(m_postfix[count]) == Lecsems::Type_of_operation::binary_operation) {
+				if (std::get<std::string>(m_postfix[count]) == "+") {
+					std::string rightOperand = stack.top();
+					stack.pop();
+					double leftOperand = std::stod(stack.top());
+					stack.pop();
 					//std::cout << temp++ << ") " << leftOperand << "+" << rightOperand << "=" << leftOperand + std::stod(rightOperand) << std::endl;
-					steck.push(std::make_pair(std::to_string(leftOperand + std::stod(rightOperand)), Lecsems::priority::operations_add_or_sub));
+					stack.push((std::to_string(leftOperand + std::stod(rightOperand))));
 				}
-				else if (m_postfix[count].first == "-") {
-					std::string rightOperand = steck.top().first;
-					steck.pop();
-					double leftOperand = std::stod(steck.top().first);
-					steck.pop();
+				else if (std::get<std::string>(m_postfix[count]) == "^") {
+					std::string rightOperand = stack.top();
+					stack.pop();
+					double leftOperand = std::stod(stack.top());
+					stack.pop();
+					//std::cout << temp++ << ") " << leftOperand << "-" << rightOperand << "=" << leftOperand ^ std::stod(rightOperand) << std::endl;
+					stack.push((std::to_string(pow(leftOperand,std::stod(rightOperand)))));
+				}
+				else if (std::get<std::string>(m_postfix[count]) == "-") {
+					std::string rightOperand = stack.top();
+					stack.pop();
+					double leftOperand = std::stod(stack.top());
+					stack.pop();
 					//std::cout << temp++ << ") " << leftOperand << "-" << rightOperand << "=" << leftOperand - std::stod(rightOperand) << std::endl;
-					steck.push(std::make_pair(std::to_string(leftOperand - std::stod(rightOperand)), Lecsems::priority::operations_add_or_sub));
+					stack.push((std::to_string(leftOperand - std::stod(rightOperand))));
 				}
-				else if (m_postfix[count].first == "*") {
-					std::string rightOperand = steck.top().first;
-					steck.pop();
-					double leftOperand = std::stod(steck.top().first);
-					steck.pop();
+				else if (std::get<std::string>(m_postfix[count]) == "*") {
+					std::string rightOperand = stack.top();
+					stack.pop();
+					double leftOperand = std::stod(stack.top());
+					stack.pop();
 					//std::cout << temp++ << ") " << leftOperand << "*" << rightOperand << "=" << leftOperand * std::stod(rightOperand) << std::endl;
-					steck.push(std::make_pair(std::to_string(leftOperand * std::stod(rightOperand)), Lecsems::priority::operations_mult_or_div));
+					stack.push((std::to_string(leftOperand * std::stod(rightOperand))));
 				}
-				else if (m_postfix[count].first == "/") {
-					std::string rightOperand = steck.top().first;
-					steck.pop();
-					double leftOperand = std::stod(steck.top().first);
-					steck.pop();
+				else if (std::get<std::string>(m_postfix[count]) == "/") {
+					std::string rightOperand = stack.top();
+					stack.pop();
+					double leftOperand = std::stod(stack.top());
+					stack.pop();
 					//std::cout << temp++ << ") " << leftOperand << "/" << rightOperand << "=" << leftOperand / std::stod(rightOperand) << std::endl;
-					steck.push(std::make_pair(std::to_string(leftOperand / std::stod(rightOperand)), Lecsems::priority::operations_mult_or_div));
+					stack.push((std::to_string(leftOperand / std::stod(rightOperand))));
 				}
 			}
 		}
-		return steck.top().first;
+		return stack.top();
 	}
+
 	void printPostfix() {
 		for (size_t count = 0; count < m_postfix.size(); ++count) {
-			std::cout << m_postfix[count].first << " ";
+			std::string temp = std::get<std::string>(m_postfix[count]);
+			std::cout << temp << " ";
 		}
 	}
-	std::string get_postfix() {
-		std::string postfix;
+
+	std::string getStringOfPostfix() {
+		std::string temp;
 		for (size_t count = 0; count < m_postfix.size(); ++count) {
-			postfix += m_postfix[count].first;
-			postfix += " ";
+			temp += std::get<std::string>(m_postfix[count]);
 		}
-		std::cout << postfix;
-		return postfix;
+		return temp;
 	}
 };
 
