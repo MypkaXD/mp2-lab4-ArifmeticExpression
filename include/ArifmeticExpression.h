@@ -188,7 +188,7 @@ public:
 				m_data.push_back({ "!" , Type_of_operation::unary_operation, Priority::own_operations });
 			else if (other[count] == '^')
 				m_data.push_back({ "^" , Type_of_operation::binary_operation, Priority::own_operations });
-			else if ((other[count] >= 49 && other[count] <= 57) || other[count] == '.') { // если число (проверка через ASCII-таблицу) или точка. Если все ок, то запушим сразу число типа дабл, то есть сразу поддержка осуществляется вещественных чисел
+			else if ((other[count] >= 48 && other[count] <= 57) || other[count] == '.') { // если число (проверка через ASCII-таблицу) или точка. Если все ок, то запушим сразу число типа дабл, то есть сразу поддержка осуществляется вещественных чисел
 				std::string temp; // вспомогательная строка
 				do {
 					temp += other[count]; // добавляем число или точку
@@ -245,11 +245,13 @@ public:
 				bool check_for_add_const; // булева переменная для проверки добавления константы
 				std::cout << "IS " << name << " CONST?" << std::endl;
 				std::cout << "IF YES - enter 1. IF NOT - enter 0" << std::endl;
+				std::cout << "WAITING INPUT: ";
 				std::cin >> check_for_add_const;
 
 				if (check_for_add_const == true) { // если 1, то добавляем константу
-					std::cout << "ENTER THE VALUE OF " << name << ": ";
+					std::cout << "ENTER THE VALUE OF " << name << std::endl;
 					std::string value_of_const; // переменная для ввода значения константы
+					std::cout << "WAITING INPUT: ";
 					std::cin >> value_of_const;
 					add_const(name, value_of_const); // добавляем константу, там заодно проверяется константа на правльность, хотя можно все равно сломать, если ввести допустим не цифру а какой-нибудь оператор(надо будет это продумать)
 					m_data.push_back({ value_of_const,Type_of_operation::non_operation ,Priority::constants });
